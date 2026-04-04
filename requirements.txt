@@ -1,0 +1,9 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+google-cloud-firestore==2.20.1
+google-cloud-discoveryengine==0.13.8
+pydantic==2.11.3
+pydantic-settings==2.8.1
+rapidfuzz==3.12.2
+pytest==8.3.5
+httpx==0.28.1
