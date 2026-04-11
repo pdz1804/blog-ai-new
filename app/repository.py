@@ -76,3 +76,26 @@ class FirestoreItemRepository:
     def list_all_for_search(self, max_items: int = 500) -> list[dict]:
         query = self._collection.order_by("created_date", direction=firestore.Query.DESCENDING).limit(max_items)
         return [doc.to_dict() for doc in query.stream()]
+
+    def list_by_tag(self, tag: str, limit: int = 50, offset: int = 0) -> list[dict]:
+        query = (
+            self._collection
+            .where("tags", "array_contains", tag)
+            .order_by("created_date", direction=firestore.Query.DESCENDING)
+            .offset(offset)
+            .limit(limit)
+        )
+        return [doc.to_dict() for doc in query.stream()]
+
+    def count_by_tag(self, tag: str) -> int:
+        query = self._collection.where("tags", "array_contains", tag)
+        return sum(1 for _ in query.stream())
+
+    def get_top_tags(self, k: int = 10) -> list[dict]:
+        tag_counts: dict[str, int] = {}
+        for doc in self._collection.stream():
+            data = doc.to_dict()
+            for tag in data.get("tags") or []:
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+        sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
+        return [{"tag": tag, "count": count} for tag, count in sorted_tags[:k]]

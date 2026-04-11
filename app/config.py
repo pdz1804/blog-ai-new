@@ -18,7 +18,8 @@ class Settings(BaseSettings):
 
     # Freshness decay for business score: age in days where score becomes 0.5.
     freshness_halflife_days: float = 180.0
-
+    # Image upload bucket
+    gcp_storage_bucket_images: str = "blog-images-default-bucket"
 
 @lru_cache
 def get_settings() -> Settings:

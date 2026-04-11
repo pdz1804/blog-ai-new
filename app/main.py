@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from fastapi import FastAPI, HTTPException, Query, Response
 
@@ -12,10 +13,15 @@ from app.schemas import (
     KeywordSearchResult,
     PageMeta,
     PagedItems,
+    PagedItemsByTag,
+    PresignedUrlRequest,
+    PresignedUrlResponse,
+    TagCount,
 )
 from app.search_fuzzy import fuzzy_search_items
 from app.search_vertex import VertexKeywordSearchClient
 from app.sync_vertex import delete_item_document, upsert_item_document
+from app.storage import generate_upload_signed_url_v4
 
 settings = get_settings()
 
@@ -165,6 +171,28 @@ def search_items_fuzzy(
     return [FuzzySearchResult(**r) for r in results]
 
 
+@app.get("/api/v1/items/by-tag/{tag}", response_model=PagedItemsByTag)
+def list_items_by_tag(
+    tag: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+) -> PagedItemsByTag:
+    offset = (page - 1) * page_size
+    rows = get_repo().list_by_tag(tag=tag, limit=page_size, offset=offset)
+    total = get_repo().count_by_tag(tag=tag)
+    return PagedItemsByTag(
+        tag=tag,
+        items=[ItemOut(**row) for row in rows],
+        meta=PageMeta(page=page, page_size=page_size, total=total),
+    )
+
+
+@app.get("/api/v1/tags/top", response_model=list[TagCount])
+def get_top_tags(k: int = Query(default=10, ge=1, le=100)) -> list[TagCount]:
+    results = get_repo().get_top_tags(k=k)
+    return [TagCount(**r) for r in results]
+
+
 @app.get("/api/v1/items/{item_id}", response_model=ItemOut)
 def get_item(item_id: str) -> ItemOut:
     data = get_repo().get(item_id)
@@ -205,3 +233,22 @@ def delete_item(item_id: str) -> dict:
     except Exception as exc:  # noqa: BLE001
         logger.exception("vertex_auto_sync delete failed item_id=%s error=%s", item_id, exc)
     return {"deleted": True, "id": item_id}
+
+@app.post("/api/v1/upload/presign", response_model=PresignedUrlResponse)
+def get_upload_presigned_url(payload: PresignedUrlRequest) -> PresignedUrlResponse:
+    # Use uuid to ensure unique object names and prevent overwriting
+    ext = payload.filename.rsplit(".", 1)[-1] if "." in payload.filename else "bin"
+    object_name = f"uploads/{uuid.uuid4().hex}.{ext}"
+
+    try:
+        url = generate_upload_signed_url_v4(
+            bucket_name=settings.gcp_storage_bucket_images,
+            blob_name=object_name,
+            content_type=payload.content_type,
+            expiration_minutes=15,
+        )
+    except Exception as exc:
+        logger.exception("Failed to generate signed url")
+        raise HTTPException(status_code=500, detail="Could not generate upload URL")
+
+    return PresignedUrlResponse(url=url, object_name=object_name, method="PUT")

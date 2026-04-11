@@ -66,3 +66,23 @@ class FuzzySearchResult(BaseModel):
     item: ItemOut
     score: float
     source: str = "fuzzy"
+
+class TagCount(BaseModel):
+    tag: str
+    count: int
+
+
+class PagedItemsByTag(BaseModel):
+    tag: str
+    items: list[ItemOut]
+    meta: PageMeta
+
+
+class PresignedUrlRequest(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=200)
+    content_type: str = Field(default="image/jpeg", max_length=100)
+
+class PresignedUrlResponse(BaseModel):
+    url: str
+    object_name: str
+    method: str = "PUT"
