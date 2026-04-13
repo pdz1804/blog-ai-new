@@ -3,26 +3,26 @@ from pydantic import BaseModel, Field
 
 
 class ItemCreate(BaseModel):
-    title: str = Field(min_length=1, max_length=300)
-    description: str | None = Field(default=None, max_length=5000)
-    abstraction: str = Field(default="", max_length=5000)
+    title: str = Field(min_length=1)
+    description: str | None = Field(default=None)
+    abstraction: str = Field(default="")
     tags: list[str] = Field(default_factory=list)
     author_id: str | None = None
-    author_name: str | None = Field(default=None, max_length=200)
-    source: str | None = Field(default=None, max_length=200)
-    url: str | None = Field(default=None, max_length=2000)
+    author_name: str | None = Field(default=None)
+    source: str | None = Field(default=None)
+    url: str | None = Field(default=None)
     citations: list[str] | None = None
 
 
 class ItemUpdate(BaseModel):
-    title: str | None = Field(default=None, min_length=1, max_length=300)
-    description: str | None = Field(default=None, max_length=5000)
-    abstraction: str | None = Field(default=None, max_length=5000)
+    title: str | None = Field(default=None, min_length=1)
+    description: str | None = Field(default=None)
+    abstraction: str | None = Field(default=None)
     tags: list[str] | None = None
     author_id: str | None = None
-    author_name: str | None = Field(default=None, max_length=200)
-    source: str | None = Field(default=None, max_length=200)
-    url: str | None = Field(default=None, max_length=2000)
+    author_name: str | None = Field(default=None)
+    source: str | None = Field(default=None)
+    url: str | None = Field(default=None)
     citations: list[str] | None = None
 
 
@@ -79,8 +79,8 @@ class PagedItemsByTag(BaseModel):
 
 
 class PresignedUrlRequest(BaseModel):
-    filename: str = Field(..., min_length=1, max_length=200)
-    content_type: str = Field(default="image/jpeg", max_length=100)
+    filename: str = Field(..., min_length=1)
+    content_type: str = Field(default="image/jpeg")
 
 class PresignedUrlResponse(BaseModel):
     url: str
